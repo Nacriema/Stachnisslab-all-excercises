@@ -12,8 +12,7 @@ The idea for the **DLT** method:
 
 We have: 
 
-![](https://latex.codecogs.com/svg.image?x_i&space;=&space;P&space;X_i&space;=&space;\begin{bmatrix}p_{11}&space;&&space;p_{12}&space;&p_{13}&space;&space;&&space;p_{14}&space;\\p_{21}&space;&&space;p_{22}&space;&&space;p_{23}&space;&&space;p_{24}&space;\\p_{31}&space;&&space;p_{32}&space;&&space;p_{33}&space;&&space;p_{34}&space;\\\end{bmatrix}&space;X_{i})
-
+![](https://latex.codecogs.com/svg.image?x_i%20=%20P%20X_i%20=%20%5Cbegin%7Bbmatrix%7Dp_%7B11%7D%20&%20p_%7B12%7D%20&p_%7B13%7D%20%20&%20p_%7B14%7D%20%5C%5Cp_%7B21%7D%20&%20p_%7B22%7D%20&%20p_%7B23%7D%20&%20p_%7B24%7D%20%5C%5Cp_%7B31%7D%20&%20p_%7B32%7D%20&%20p_%7B33%7D%20&%20p_%7B34%7D%20%5C%5C%5Cend%7Bbmatrix%7D%20X_%7Bi%7D)
 
 
 
