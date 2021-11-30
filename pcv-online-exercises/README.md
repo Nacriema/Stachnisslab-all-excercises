@@ -1,4 +1,4 @@
-# PCV Online excercises
+# Photogrammetric Computer Vision Online excercises
 
 
 ## Notice
