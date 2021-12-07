@@ -1,8 +1,5 @@
 # Compute camera extrinsics using P3P (spatial resection)
-from _multibytecodec import __create_codec
-
 import numpy as np
-import numpy.testing
 from numpy.linalg import norm, inv, svd, matrix_rank, det
 from itertools import combinations
 from math import sqrt
