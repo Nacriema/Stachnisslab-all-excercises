@@ -61,22 +61,34 @@ def compute_corners(I, type='harris', T=0.2):
 
     det_M = np.multiply(grad_x_square, grad_y_square) - np.multiply(grad_x_mul_grad_y, grad_x_mul_grad_y)
     trace_M = grad_x_square + grad_y_square
-    R = det_M - 0.05 * np.multiply(trace_M, trace_M)
 
-    # 5. Apply threshold on R to get the corner, where
-    # R approx 0: Flat region
-    # R < 0: Edge
-    # R >> 0: Corner
-    R[R.max() / 500. >= R] = 0
+    if type == 'harris':
+        R = det_M - 0.05 * (trace_M ** 2)
 
-    # 6. Find local maxima above some threshold as detected interest point
-    # See a smart way to do it: https://stackoverflow.com/questions/38179797/numpy-max-pooling-convolution
-    R_ = R * (R == ndimage.maximum_filter(R, size=5))
+        # 5. Apply threshold on R to get the corner, where
+        # R approx 0: Flat region
+        # R < 0: Edge
+        # R >> 0: Corner
+        R[R.max() * T >= R] = 0
 
-    # 7. Return the coordinate of corner in R_
-    # See https://numpy.org/doc/stable/reference/generated/numpy.argwhere.html
-    corners = np.argwhere(R_ != 0)
+        # 6. Find local maxima above some threshold as detected interest point
+        # See a smart way to do it: https://stackoverflow.com/questions/38179797/numpy-max-pooling-convolution
+        R_ = R * (R == ndimage.maximum_filter(R, size=5))
 
+        # 7. Return the coordinate of corners in R_
+        # See https://numpy.org/doc/stable/reference/generated/numpy.argwhere.html
+        corners = np.argwhere(R_ != 0)
+    elif type == 'Shi-Tomasi':
+        # 8. Find Lambda min, for simplify I reuse the variable R to store array of lambda min
+        R = trace_M / 2.0 - 1/2. * np.sqrt(trace_M**2 - 4 * det_M)
+        # 9. Apply thresh hold
+        R[R.max() * T >= R] = 0
+        # 10. Apply non-maxima suppression
+        R_ = R * (R == ndimage.maximum_filter(R, size=5))
+        # 11. Return the coordinate of corners in R_
+        corners = np.argwhere(R_ != 0)
+    else:
+        raise NotImplementedError(f'Invalid mode: {type}')
     # I return more result than the original function (for visualization purpose)
     return corners, R_
 
@@ -268,9 +280,9 @@ if __name__ == '__main__':
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     # ascent = misc.ascent()
-    ascent = imageio.imread('checkerboard.png')
+    ascent = imageio.imread('1.JPG')
     ascent = rgb2gray(ascent)
-    corners, img = compute_corners(I=ascent)
+    corners, img = compute_corners(I=ascent, type='Shi-Tomasi', T=0.5)
     print(corners.shape)
     ax1.imshow(ascent)
     ax2.imshow(img, cmap='jet')
