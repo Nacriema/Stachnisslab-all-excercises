@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from builtins import print
 
 import cv2
 import numpy as np
@@ -10,6 +11,7 @@ from scipy import ndimage, misc, signal
 from skimage.color import rgb2gray
 
 
+# DONE
 def compute_corners(I, type='harris', T=0.2):
     """
     Compute corner keypoints using Harris and Shi-Tomasi criteria
@@ -38,7 +40,7 @@ def compute_corners(I, type='harris', T=0.2):
                                  [0 + 10j, 0 + 0j, 0 - 10j],
                                  [-3 + 3j, -10 + 0j, -3 - 3j]])
 
-    grad = signal.convolve2d(ascent, scharr, boundary='symm', mode='same')
+    grad = signal.convolve2d(I, scharr, boundary='symm', mode='same')
     grad_x = grad.real
     grad_y = grad.imag
 
@@ -54,7 +56,7 @@ def compute_corners(I, type='harris', T=0.2):
     grad_x_mul_grad_y = ndimage.gaussian_filter(grad_x_mul_grad_y, sigma=0.8, truncate=3)
 
     # 4. Compute scalar cornerness value use one of the R measures. I choose R = det(M) - k * (trace(M))^2,
-    # k in range [0.04, 0.06]
+    # k in range [0.04, 0.06], I choose k=0.05
 
     # M = |I_x I_x    I_x I_y|
     #     |I_x I_y    I_y I_y|
@@ -78,6 +80,7 @@ def compute_corners(I, type='harris', T=0.2):
         # 7. Return the coordinate of corners in R_
         # See https://numpy.org/doc/stable/reference/generated/numpy.argwhere.html
         corners = np.argwhere(R_ != 0)
+
     elif type == 'shi-tomasi':
         # 8. Find Lambda min, for simplify I reuse the variable R to store array of lambda min
         R = trace_M / 2.0 - 1/2. * np.sqrt(trace_M**2 - 4 * det_M)
@@ -87,12 +90,84 @@ def compute_corners(I, type='harris', T=0.2):
         R_ = R * (R == ndimage.maximum_filter(R, size=5))
         # 11. Return the coordinate of corners in R_
         corners = np.argwhere(R_ != 0)
+
     else:
         raise NotImplementedError(f'Invalid mode: {type}')
+
     # I return more result than the original function (for visualization purpose)
     return corners, R_
 
 
+# Helper functions for compute_descriptors function
+def compute_feature_4_4(I):
+    """
+    Computes 8 bit descriptor for the small (4 x 4 patch).
+    Parameters
+    ----------
+    I : float [4x4]
+        gradient orientation as a 2D numpy array
+
+    Returns
+    -------
+    D : numpy array [8 x 1]
+        8 bit descriptors  corresponding to (4 x 4) patch
+    """
+    bin_edges = np.array([-180., -135., -90, -45, 0, 45, 90, 135, 180])
+    I_digitize = np.digitize(I, bin_edges, True)  # This return the orient which each element in quad belong
+
+    # Create an empty array contain the frequent of each orient happen in quad_digitize
+    # See https://numpy.org/doc/stable/reference/generated/numpy.digitize.html
+    values, counts = np.unique(I_digitize.flatten(), return_counts=True)
+    I_ori_count = np.zeros(8)
+    for i in range(len(values)):
+        I_ori_count[values[i] - 1] += counts[i]
+
+    return I_ori_count / I_ori_count.sum()
+
+
+def compute_feature_16_16(I):
+    """
+        Computes 128 bit descriptor for the small (16 x 16 patch).
+        Parameters
+        ----------
+        I : float [16x16]
+            gray scale image as a 2D numpy array
+
+        Returns
+        -------
+        D : numpy array [128 x 1]
+            128 bit descriptors  corresponding to (16 x 16) patch
+        """
+    scharr = 1 / 32. * np.array([[3 + 3j, 10 + 0j, 3 - 3j],
+                                 [0 + 10j, 0 + 0j, 0 - 10j],
+                                 [-3 + 3j, -10 + 0j, -3 - 3j]])
+
+    # Compute gradient for each pixel, x y is the row and col of image array
+    grad = signal.convolve2d(I, scharr, boundary='symm', mode='same')
+
+    # Compute the gradient direction for each patch (16x16)
+    # See: https://numpy.org/doc/stable/reference/generated/numpy.arctan2.html
+    patch_angle = np.arctan2(grad.real, grad.imag) * 180 / np.pi  # Orientation of gradient in degree
+
+    # Separate to 16 x 16 patch into 16 small patch (each is 4 x 4), for each small patch compute the
+    # histogram about the orient of gradient
+    feature_128 = []
+    for x in range(0, 15, 4):
+        for y in range(0, 15, 4):
+            four_by_four = patch_angle[x:x + 4, y:y + 4]
+            feature_128.append(compute_feature_4_4(four_by_four))
+    feature_128 = np.stack(feature_128, axis=0).flatten()
+    return feature_128
+
+
+# TODO: NOT SURE IF I WILL USE IT
+def pad_with(vector, pad_width, iasis, kwargs):
+    pad_value = kwargs.get('padder', 10)
+    vector[:pad_width[0]] = pad_value
+    vector[-pad_width[1]:] = pad_value
+
+
+# DONE
 def compute_descriptors(I, corners):
     """
     Computes a 128 bit descriptor as described in the lecture.
@@ -100,6 +175,7 @@ def compute_descriptors(I, corners):
     ----------
     I : float [MxN]
         grayscale image as a 2D numpy array
+
     corners : numpy array [num_corners x 2] 
               Coordinates of the detected corners. 
     
@@ -109,10 +185,17 @@ def compute_descriptors(I, corners):
         128 bit descriptors  corresponding to each corner keypoint
 
     """
-
     # TODO: Implement descriptor computation for each corner feature keypoint
-
-    return D
+    # Add small patch around the image to handle the numerical cases
+    D = []
+    # TODO: Padding will lead to the corner index wrong !!!
+    # I = np.pad(I, 10, pad_with, padder=100/255.)
+    for cor_point in corners:
+        corner_patch = I[cor_point[0] - 7: cor_point[0] + 9, cor_point[1] - 7: cor_point[1] + 9]
+        D.append(compute_feature_16_16(corner_patch))
+    D = np.stack(D, axis=0)
+    assert D.shape == (len(corners), 128)
+    return D, I   # For plot purpose
 
 
 def compute_matches(D1, D2):
@@ -282,8 +365,13 @@ if __name__ == '__main__':
     # ascent = misc.ascent()
     ascent = imageio.imread('1.JPG')
     ascent = rgb2gray(ascent)
-    corners, img = compute_corners(I=ascent, type='Shi-Tomasi', T=0.5)
-    print(corners.shape)
+    corners, img = compute_corners(I=ascent, type='shi-tomasi', T=0.5)
+
+    # TODO: D has rows equals to corners, some corners give the nan result in D, Notice for that
+    D, I = compute_descriptors(ascent, corners)
+    print(D)
+
     ax1.imshow(ascent)
-    ax2.imshow(img, cmap='jet')
+    ax2.imshow(I)
+    # ax2.imshow(img, cmap='jet')
     plt.show()
