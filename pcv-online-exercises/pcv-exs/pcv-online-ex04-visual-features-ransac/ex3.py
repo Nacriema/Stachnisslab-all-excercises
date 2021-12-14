@@ -22,7 +22,7 @@ def compute_corners(I, type='harris', T=0.2):
         grayscale image
 
     type :  string
-            corner type ('harris' or 'Shi-Tomasi')
+            corner type ('harris' or 'shi-tomasi')
 
     T:  float
         threshold for corner detection
@@ -78,7 +78,7 @@ def compute_corners(I, type='harris', T=0.2):
         # 7. Return the coordinate of corners in R_
         # See https://numpy.org/doc/stable/reference/generated/numpy.argwhere.html
         corners = np.argwhere(R_ != 0)
-    elif type == 'Shi-Tomasi':
+    elif type == 'shi-tomasi':
         # 8. Find Lambda min, for simplify I reuse the variable R to store array of lambda min
         R = trace_M / 2.0 - 1/2. * np.sqrt(trace_M**2 - 4 * det_M)
         # 9. Apply thresh hold
