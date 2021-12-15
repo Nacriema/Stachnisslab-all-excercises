@@ -5,10 +5,11 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio
+import skimage.transform
 import imutils
 from scipy import ndimage, misc, signal
-from numpy.linalg import norm
-
+from numpy.linalg import norm, inv
+import random
 
 from skimage.color import rgb2gray
 
@@ -85,7 +86,7 @@ def compute_corners(I, type='harris', T=0.2):
 
     elif type == 'shi-tomasi':
         # 8. Find Lambda min, for simplify I reuse the variable R to store array of lambda min
-        R = trace_M / 2.0 - 1/2. * np.sqrt(trace_M**2 - 4 * det_M)
+        R = trace_M / 2.0 - 1 / 2. * np.sqrt(trace_M ** 2 - 4 * det_M)
         # 9. Apply thresh hold
         R[R.max() * T >= R] = 0
         # 10. Apply non-maxima suppression
@@ -197,7 +198,7 @@ def compute_descriptors(I, corners):
         D.append(compute_feature_16_16(corner_patch))
     D = np.stack(D, axis=0)
     assert D.shape == (len(corners), 128)
-    return D, I   # For plot purpose
+    return D, I  # For plot purpose
 
 
 def lowe_criteria(q, P, T=2.):
@@ -236,8 +237,8 @@ def lowe_criteria(q, P, T=2.):
         return None
 
     # Get indices for top-2 smallest
-    idx_distance_sorted = np.argsort(distances)    # Return the index for the item in distance from small to big
-    p_1_idx = idx_distance_sorted[0]   # Smallest distance
+    idx_distance_sorted = np.argsort(distances)  # Return the index for the item in distance from small to big
+    p_1_idx = idx_distance_sorted[0]  # Smallest distance
     p_2_idx = idx_distance_sorted[1]
 
     # Test if distance to best match is smaller than threshold
@@ -250,6 +251,7 @@ def lowe_criteria(q, P, T=2.):
         return None
 
 
+# DONE
 def compute_matches(D1, D2):
     """
     Computes matches for two images using the descriptors.
@@ -270,13 +272,14 @@ def compute_matches(D1, D2):
     """
     M = []
     for i in range(len(D1)):
-        corr_idx = lowe_criteria(D1[i], D2)   # Corresponding point to current index
+        corr_idx = lowe_criteria(D1[i], D2)  # Corresponding point to current index
         if corr_idx is not None:
             M.append(np.array([i, corr_idx]))
     M = np.stack(M, axis=0)
     return M
 
 
+# DONE
 def plot_matches(I1, I2, C1, C2, M):
     """ 
     Plots the matches between the two images
@@ -292,15 +295,14 @@ def plot_matches(I1, I2, C1, C2, M):
     plt.imshow(I_new, cmap='gray')
     for i in range(M.shape[0]):
         p1 = C1[M[i, 0], :]
-        print(p1)
         p2 = C2[M[i, 1], :] + np.array([0, I1.shape[1]])
-        print(p2)
-        plt.plot(p1[1], p1[0], 'rx')
-        plt.plot(p2[1], p2[0], 'rx')
+        plt.plot(p1[1], p1[0], 'rx', markersize=2)
+        plt.plot(p2[1], p2[0], 'rx', markersize=2)
         plt.plot([p1[1], p2[1]], [p1[0], p2[0]], '-y', color='#5bff4d', linewidth=1)
 
 
-def compute_homography_ransac(C1, C2, M):
+# TODO: Implement RANSAC here
+def compute_homography_ransac(C1, C2, M, inlier_thres=0.9):
     """
     Implements a RANSAC scheme to estimate the homography and the set of inliers.
 
@@ -312,7 +314,8 @@ def compute_homography_ransac(C1, C2, M):
          corner keypoints for image 2
     M  : numpy array [num_matches x 2]
         [cornerIdx1, cornerIdx2] each row contains indices of corresponding keypoints 
- 
+
+    inlier_thres  : Inlier condition for stop the procedure and return result
     Returns
     ----------
     H_final : numpy array [3 x 3]
@@ -320,20 +323,57 @@ def compute_homography_ransac(C1, C2, M):
     M_final : numpy array [num_inlier_matches x 2]
             [cornerIdx1, cornerIdx2] each row contains indices of inlier matches
     """
+    best_inlier_percent = -1.
 
-    max_iter = 100
-    min_inlier_ratio = 0.6
-    inlier_thres = 5
+    out_lier_ratio = 0.3
+    sample_num = 4
+    p = 0.9  # Our expected success ratio
+    max_iter = int(np.ceil(np.log(1 - p) / np.log(1 - (1 - out_lier_ratio)**sample_num)))  # Number of trial needed
 
     H_final = None
     M_final = None
 
-    # TODO: Complete RANSAC algorithm to estimate the best estimaton
+    # Base on C1, C2, M, create P1 and P2 (i th row of P1 correspond to i th row of P2), P1 and P2 then used for
+    # compute_residual function
+    P1 = C1[M[:, 0], :]
+    P2 = C2[M[:, 1], :]
 
+    # TODO: Complete RANSAC algorithm to estimate the best estimation
+    # TODO: Delete this line later
+
+    for i in range(max_iter):
+        # Uniform random choose 4 points, random without replacement
+        # See: https://numpy.org/doc/stable/reference/random/generated/numpy.random.choice.html
+        idx = np.random.choice(len(P1), sample_num, replace=False)
+        H = calculate_homography_four_matches(P1[idx], P2[idx])
+
+        # Base on the estimated H, compute the errors when mapping from P1 to P2 (this is the Euclidean of H @ P1 - P2)
+        residual = compute_residual(P1, P2, H)
+        # Set the threshold T to filter the distance, say if the distance is greater than 2 pixel, then not use
+        T = 2.
+        inlier_num = sum(residual < T)
+        inliner_percent = inlier_num / len(P1)
+
+        if inliner_percent > inlier_thres:
+            # Stop and return the current H and current M as the final
+            # Get position where is False, remove them from Original M
+            indexes_false = np.where(np.invert(residual < T))[0]
+            # See: https://numpy.org/doc/stable/reference/generated/numpy.delete.html
+            M_ = np.delete(M, indexes_false, axis=0)
+            return H, M_
+
+        elif inliner_percent > best_inlier_percent:
+            best_inlier_percent = inliner_percent
+            indexes_false = np.where(residual < T)[0]
+            M_ = np.delete(M, indexes_false, axis=0)
+            H_final = H
+            M_final = M_
+
+    # If the inlier threshold not reach, then return the best version
     return H_final, M_final
 
 
-# Calculate the geometric distance between estimated points and original points, namely residuals.
+# TODO: Calculate the geometric distance between estimated points and original points, namely residuals.
 def compute_residual(P1, P2, H):
     """
     Compute the residual given the Homography H
@@ -350,16 +390,27 @@ def compute_residual(P1, P2, H):
     
     Returns:
     ----------
-    residual : float
+    residual : maybe the array of float [num_points x 1]
                 residual computed for the corresponding points P1 and P2 
                 under the transformation given by H
     """
+    # Change point in P1, P2 to Homogeneous
 
     # TODO: Compute residual given Homography H
+    # Basically get H @ P1 then compare to P2
+    residual = None
+    # Convert to homogeneous coordinate
+    P1 = np.c_[P1, np.ones(len(P1))]
+    P2 = np.c_[P2, np.ones(len(P2))]
 
+    P1_ = (H @ P1.T).T
+    # Normal to homogeneous
+    P1_ = np.divide(P1_, P1_[:, -1].reshape(-1, 1))
+    residual = norm((P2 - P1_), axis=1)
     return residual
 
 
+# DONE
 def calculate_homography_four_matches(P1, P2):
     """
     Estimate the homography given four correspondening keypoints in the two images.
@@ -378,7 +429,7 @@ def calculate_homography_four_matches(P1, P2):
         Homography which maps P1 to P2 based on the four corresponding points
     """
 
-    if P1.shape[0] or P2.shape[0] != 4:
+    if P1.shape[0] != 4  or P2.shape[0] != 4:
         print('Four corresponding points needed to compute Homography')
         return None
 
@@ -387,8 +438,16 @@ def calculate_homography_four_matches(P1, P2):
 
     A = []
     for i in range(P1.shape[0]):
-        p1 = np.array([P1[i, 0], P1[i, 1], 1])
-        p2 = np.array([P2[i, 0], P2[i, 1], 1])
+        # ORIGINAL
+        # p1 = np.array([P1[i, 0], P1[i, 1], 1])
+        # p2 = np.array([P2[i, 0], P2[i, 1], 1])
+
+        # Change x, y axis, due to the ambiguties of the wrapProjective function
+        # See: https://github.com/OlehOnyshchak/ImageTransformations for more information
+        # Or see PerspectiveTransformation.inpynb
+
+        p1 = np.array([P1[i, 1], P1[i, 0], 1])
+        p2 = np.array([P2[i, 1], P2[i, 0], 1])
 
         a2 = [
             0, 0, 0, -p2[2] * p1[0], -p2[2] * p1[1], -p2[2] * p1[2],
@@ -403,15 +462,15 @@ def calculate_homography_four_matches(P1, P2):
 
     A = np.array(A)
 
-    # svd composition
-    # the singular value is sorted in descending order
+    # SVD composition
+    # The singular value is sorted in descending order
     u, s, v = np.linalg.svd(A)
 
-    # we take the “right singular vector” (a column from V )
-    # which corresponds to the smallest singular value
+    # Ee take the “right singular vector” (a column from V )
+    # Which corresponds to the smallest singular value
     H = np.reshape(v[8], (3, 3))
 
-    # normalize and now we have H
+    # Normalize and now we have H
     H = (1 / H[2, 2]) * H
 
     return H
@@ -420,21 +479,7 @@ def calculate_homography_four_matches(P1, P2):
 if __name__ == '__main__':
     fig = plt.figure()
     plt.gray()
-    # ax1 = fig.add_subplot(231)
-    # ax2 = fig.add_subplot(232)
-    # ax3 = fig.add_subplot(233)
-    # ax4 = fig.add_subplot(234)
-    # ax5 = fig.add_subplot(235)
-    # ax6 = fig.add_subplot(236)
-    #
-    # ax1.title.set_text('Mountain 1')
-    # ax2.title.set_text('Key points of harris')
-    # ax3.title.set_text('Key points of shi-tomasi')
-    # ax4.title.set_text('Mountain 2')
-    # ax5.title.set_text('Key points of harris')
-    # ax6.title.set_text('Key points of shi-tomasi')
 
-    # ascent = misc.ascent()
     I1 = imageio.imread('1.JPG')
     I1_gray = cv2.cvtColor(I1, cv2.COLOR_RGB2GRAY)
 
@@ -442,33 +487,41 @@ if __name__ == '__main__':
     I2_gray = cv2.cvtColor(I2, cv2.COLOR_RGB2GRAY)
 
     T_harris = 0.05  # TODO:  Choose a suitable threshold
-    T_shi_tomasi = 0.6  # TODO:  Choose a suitable threshold
+    T_shi_tomasi = 0.05  # TODO:  Choose a suitable threshold
 
     C1_harris, C1_harris_key = compute_corners(I1_gray, 'harris', T_harris)
     C2_harris, C2_harris_key = compute_corners(I2_gray, 'harris', T_harris)
 
-    # C1_shi_tomasi, C1_shi_tomasi_key = compute_corners(I1_gray, 'shi-tomasi', T_shi_tomasi)
-    # C2_shi_tomasi, C2_shi_tomasi_key = compute_corners(I2_gray, 'shi-tomasi', T_shi_tomasi)
+    C1_shi_tomasi, C1_shi_tomasi_key = compute_corners(I1_gray, 'shi-tomasi', T_shi_tomasi)
+    C2_shi_tomasi, C2_shi_tomasi_key = compute_corners(I2_gray, 'shi-tomasi', T_shi_tomasi)
 
     # Compute the descriptor for the two images
     D1_harris, _ = compute_descriptors(I1_gray, C1_harris)
     D2_harris, _ = compute_descriptors(I2_gray, C2_harris)
 
-    # D1_shi_tomasi = compute_descriptors(I1_gray, C1_shi_tomasi)
-    # D2_shi_tomasi = compute_descriptors(I2_gray, C2_shi_tomasi)
+    D1_shi_tomasi, _ = compute_descriptors(I1_gray, C1_shi_tomasi)
+    D2_shi_tomasi, _ = compute_descriptors(I2_gray, C2_shi_tomasi)
     # TODO: D has rows equals to corners, some corners give the nan result in D, Notice for that
 
     # TEST plot_matches function
     M_harris = compute_matches(D1_harris, D2_harris)
-    plot_matches(I1_gray, I2_gray, C1_harris, C2_harris, M_harris)
+    M_shi_tomasi = compute_matches(D1_shi_tomasi, D2_shi_tomasi)
 
-    # ax1.imshow(I1)
-    # ax2.imshow(C1_harris_key, cmap='jet')
-    # ax3.imshow(C1_shi_tomasi_key, cmap='jet')
-    # ax4.imshow(I2)
-    # ax5.imshow(C2_harris_key, cmap='jet')
-    # ax6.imshow(C2_shi_tomasi_key, cmap='jet')
+    # plot_matches(I1_gray, I2_gray, C1_shi_tomasi, C2_shi_tomasi, M_shi_tomasi)
+    H, M = compute_homography_ransac(C1_shi_tomasi, C2_shi_tomasi, M_shi_tomasi, inlier_thres=0.999)
+    # H, M = compute_homography_ransac(C2_harris, C1_harris, M_harris, inlier_thres=0.999)
 
-    # ax2.imshow(img, cmap='jet')
+    print('TEST VALUE OF H')
+    print(H)
+
+    print('TEST VALUE OF M')
+    print(M)
+    # Transform image
+    w1, h1 = I1.shape[:2]
+    w2, h2 = I2.shape[:2]
+    # result = warpPerspective(I1, H, (h1 + h2, w1))
+    # Need to transform from 2 to 1 then concat
+    result = cv2.warpPerspective(I2, inv(H), (w1 + w2, h1))
+    result[0:w2, 0:h2] = I1
+    plt.imshow(result)
     plt.show()
-
