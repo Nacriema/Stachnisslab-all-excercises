@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import imageio
 import imutils
 from scipy import ndimage, misc, signal
+from numpy.linalg import norm
+
 
 from skimage.color import rgb2gray
 
@@ -94,7 +96,7 @@ def compute_corners(I, type='harris', T=0.2):
     else:
         raise NotImplementedError(f'Invalid mode: {type}')
 
-    # I return more result than the original function (for visualization purpose)
+    # I return more result than the original function (for visualization purpose), return the grad for later use
     return corners, R_
 
 
@@ -198,10 +200,60 @@ def compute_descriptors(I, corners):
     return D, I   # For plot purpose
 
 
+def lowe_criteria(q, P, T=2.):
+    """
+    Compute the closed point with the given q from the point set P.
+
+    Lowe's Ratio Test has 3 steps:
+    * Find closet to descriptors to q, called p_1 and p_2 based on the Euclidean distances (p_1 is best match and p_2 is
+    second-best match)
+    * Test if distance to the best match is smaller than a Threshold T (hyper-param here):
+            d(q, p_1) < T ?
+    * Accept match only if the best match p_1 is substantially better than the second:
+            d(q, p_1) / d(q, p_2) < 1 / 2
+
+    If p_1 passed all criteria then accept that p_1 closed to the pivot q
+
+    Parameters
+    ----------
+    q :  numpy array [128 x 1]
+         128 bit feature of the pivot corner q from image 1
+    P :  numpy array [num_corners x 128]
+         descriptors for image 2 corners set
+    T :  scalar
+         threshold to accept the closest point to pass step 2 of lowe
+
+    Returns
+    -------
+    idx:  scalar
+          index of the best match corner from P with the given q, if not pass the Lowe, return None
+
+    """
+    distances = norm((P - q), axis=1)
+
+    # TODO: If distances is all nan, then return None
+    if np.isnan(distances).all():
+        return None
+
+    # Get indices for top-2 smallest
+    idx_distance_sorted = np.argsort(distances)    # Return the index for the item in distance from small to big
+    p_1_idx = idx_distance_sorted[0]   # Smallest distance
+    p_2_idx = idx_distance_sorted[1]
+
+    # Test if distance to best match is smaller than threshold
+    if distances[p_1_idx] >= T:
+        return None
+    elif distances[p_1_idx] / distances[p_2_idx] < 0.5:
+        # Accept the p_1 only the best match p_1 is substantially better than p_2
+        return p_1_idx
+    else:
+        return None
+
+
 def compute_matches(D1, D2):
     """
     Computes matches for two images using the descriptors.
-    Uses the Lowe's criterea to determine the best match.
+    Uses the Lowe's criteria to determine the best match.
 
     Parameters
     ----------
@@ -213,9 +265,15 @@ def compute_matches(D1, D2):
     Returns
     ----------
     M : numpy array [num_matches x 2]
-        [cornerIdx1, cornerIdx2] each row contains indices of corresponding keypoints 
-    """
+        [cornerIdx1, cornerIdx2] each row contains indices of corresponding keypoints
 
+    """
+    M = []
+    for i in range(len(D1)):
+        corr_idx = lowe_criteria(D1[i], D2)   # Corresponding point to current index
+        if corr_idx is not None:
+            M.append(np.array([i, corr_idx]))
+    M = np.stack(M, axis=0)
     return M
 
 
@@ -234,10 +292,12 @@ def plot_matches(I1, I2, C1, C2, M):
     plt.imshow(I_new, cmap='gray')
     for i in range(M.shape[0]):
         p1 = C1[M[i, 0], :]
-        p2 = C2[M[i, 1], :] + np.array([I1.shape[1], 0])
-        plt.plot(p1[0], p1[1], 'rx')
-        plt.plot(p2[0], p2[1], 'rx')
-        plt.plot([p1[0], p2[0]], [p1[1], p2[1]], '-y')
+        print(p1)
+        p2 = C2[M[i, 1], :] + np.array([0, I1.shape[1]])
+        print(p2)
+        plt.plot(p1[1], p1[0], 'rx')
+        plt.plot(p2[1], p2[0], 'rx')
+        plt.plot([p1[1], p2[1]], [p1[0], p2[0]], '-y', color='#5bff4d', linewidth=1)
 
 
 def compute_homography_ransac(C1, C2, M):
@@ -360,18 +420,55 @@ def calculate_homography_four_matches(P1, P2):
 if __name__ == '__main__':
     fig = plt.figure()
     plt.gray()
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
+    # ax1 = fig.add_subplot(231)
+    # ax2 = fig.add_subplot(232)
+    # ax3 = fig.add_subplot(233)
+    # ax4 = fig.add_subplot(234)
+    # ax5 = fig.add_subplot(235)
+    # ax6 = fig.add_subplot(236)
+    #
+    # ax1.title.set_text('Mountain 1')
+    # ax2.title.set_text('Key points of harris')
+    # ax3.title.set_text('Key points of shi-tomasi')
+    # ax4.title.set_text('Mountain 2')
+    # ax5.title.set_text('Key points of harris')
+    # ax6.title.set_text('Key points of shi-tomasi')
+
     # ascent = misc.ascent()
-    ascent = imageio.imread('1.JPG')
-    ascent = rgb2gray(ascent)
-    corners, img = compute_corners(I=ascent, type='shi-tomasi', T=0.5)
+    I1 = imageio.imread('1.JPG')
+    I1_gray = cv2.cvtColor(I1, cv2.COLOR_RGB2GRAY)
 
+    I2 = imageio.imread('2.JPG')
+    I2_gray = cv2.cvtColor(I2, cv2.COLOR_RGB2GRAY)
+
+    T_harris = 0.05  # TODO:  Choose a suitable threshold
+    T_shi_tomasi = 0.6  # TODO:  Choose a suitable threshold
+
+    C1_harris, C1_harris_key = compute_corners(I1_gray, 'harris', T_harris)
+    C2_harris, C2_harris_key = compute_corners(I2_gray, 'harris', T_harris)
+
+    # C1_shi_tomasi, C1_shi_tomasi_key = compute_corners(I1_gray, 'shi-tomasi', T_shi_tomasi)
+    # C2_shi_tomasi, C2_shi_tomasi_key = compute_corners(I2_gray, 'shi-tomasi', T_shi_tomasi)
+
+    # Compute the descriptor for the two images
+    D1_harris, _ = compute_descriptors(I1_gray, C1_harris)
+    D2_harris, _ = compute_descriptors(I2_gray, C2_harris)
+
+    # D1_shi_tomasi = compute_descriptors(I1_gray, C1_shi_tomasi)
+    # D2_shi_tomasi = compute_descriptors(I2_gray, C2_shi_tomasi)
     # TODO: D has rows equals to corners, some corners give the nan result in D, Notice for that
-    D, I = compute_descriptors(ascent, corners)
-    print(D)
 
-    ax1.imshow(ascent)
-    ax2.imshow(I)
+    # TEST plot_matches function
+    M_harris = compute_matches(D1_harris, D2_harris)
+    plot_matches(I1_gray, I2_gray, C1_harris, C2_harris, M_harris)
+
+    # ax1.imshow(I1)
+    # ax2.imshow(C1_harris_key, cmap='jet')
+    # ax3.imshow(C1_shi_tomasi_key, cmap='jet')
+    # ax4.imshow(I2)
+    # ax5.imshow(C2_harris_key, cmap='jet')
+    # ax6.imshow(C2_shi_tomasi_key, cmap='jet')
+
     # ax2.imshow(img, cmap='jet')
     plt.show()
+
