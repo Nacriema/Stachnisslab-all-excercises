@@ -517,11 +517,18 @@ if __name__ == '__main__':
     print('TEST VALUE OF M')
     print(M)
     # Transform image
-    w1, h1 = I1.shape[:2]
-    w2, h2 = I2.shape[:2]
+    h1, w1 = I1.shape[:2]
+    h2, w2 = I2.shape[:2]
     # result = warpPerspective(I1, H, (h1 + h2, w1))
     # Need to transform from 2 to 1 then concat
+
+    # Warp I2 to I1
     result = cv2.warpPerspective(I2, inv(H), (w1 + w2, h1))
-    result[0:w2, 0:h2] = I1
+    result[0:h1, 0:w1] = I1
+
+    # OR Warp I1 to I2
+    # result = cv2.warpPerspective(I1, H, (w1 + w2, h1))
+    # result[0:w2, 0:h2] = I2
+
     plt.imshow(result)
     plt.show()
