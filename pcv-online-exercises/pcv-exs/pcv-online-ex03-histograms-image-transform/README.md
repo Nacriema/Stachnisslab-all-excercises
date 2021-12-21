@@ -1,6 +1,6 @@
 # Image Histograms
 
-##1. What is Image Histograms ? 
+## 1. What is Image Histograms ? 
 * The histogram show often the pixel intensity values occur in the image. 
 * Histogram is a 2D bar plot where x-axis are the elements, y-axis is the occurrences for these items.
 * With the RGB image, this tell how the distribution of intensity value along 3 color channels.
