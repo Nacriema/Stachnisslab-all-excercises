@@ -90,7 +90,104 @@ because all the pixel result which larger or smaller than threshold (here is 0 a
 become the output intensity)
 * 1-D array have fixed length, function evaluation corresponds to reading a byte from memory
 
-### h. Color Images
+### h. Histogram on Color Images
 * We build a histogram for each channel (3 channels have 3 histograms).
 * Manipulate the individual channel with those function
 
+### i. Histogram Equalization
+Idea: take all the intensity values that we have in our image and distribute them uniformly over the range of intensity 
+value (from 0 to 255). 
+
+#### How the Operator function affect the Distribution of Intensities (histogram) ? 
+* Assume monotonous function b = f(a)
+* Histogram of input image: h_a(a)  (a is the query input intensity value)
+* Compute the histogram of image b: h_b(b) when given h_a(a) and f
+* We use the gained knowledge to design f to map from a to b with the desired constraint of histogram of b. 
+* Then we have to know the relation how h_a(a) become h_b(b) with the function f ?
+
+#### Transformation of a PDF 
+
+![](./images/im_1.png)
+
+We have h_a, f, then how we find the h_b 
+In the image above, all image from range da (say from 150 to 155) must be the same in the range db (say range from 
+f(150) to f(155) - that is the reason why the Curve f is monotone - not the sine wave or sth like that).
+
+* The gray "area" in the interval [a, a+da] is mapped to the interval [b, b+db]
+* So h_b(b) * db = h_a(a) * da (the integral of 2 area must be the same)
+* Then h_b(b) = h_a(a) / |db / da|
+* And db / da is the derivative of f, so:
+* h_b(b) = h_a(a) / |db / da| = h_a(a) / |f'(a)|
+* Have b = f(a) => a = f^-1(b)
+* Then h_b(b) = h_a(f^-1(b)) / |f'(f^-1(b))| **(1)**
+
+![](./images/im_2.png)
+
+Function **(1)** means, if we know h_a and f, then we can compute h_b at any b (in our case b in range [0...255])
+
+#### Design Transformation f Such that the Resulting Image has Desired Properties. We have 2 examples: Histogram Equalization and 
+
+
+#### Histogram Equalization 
+
+* Idea: "All bins are equally used in the result" - Uniform distribution of h_b
+* Why we use this technique: enhance image (image contain mainly dark and light, then hard to detect features, use this 
+for dealing with this case)
+* Given h_a and desired h_b(b) = const at all b [0, 255], compute the map function f
+
+![](./images/im_3.png)
+
+```text
+Assume f is monotone, increase
+
+Have:
+h_b(b) = k (our desired distribution function k is constant scalar)
+h_b(b) = h_a(a) / (db/da)    (f is monotone, increase)
+
+Then: 
+k = h_a(a) / (db/da) => db = (1 / k) * h_a(a) * da   (2)
+
+Solve via integration, from (2) we have: 
+
+    I(db) = I((1/k) * h_a(a) * da) 
+
+<=>  b + C1 = (1 / k) * I(h_a(a) * da)
+
+<=>  b + C1 = (1 / k) * H(a) + C2      (H(a) is the Cumulative histogram)  
+
+<=>  b = (1 / k) * H(a) + C  = f(a)
+
+Use constrain to compute k and C, we can typically choose that the smallest remain the smallest, the largest remain the 
+largest: 
+
+f(0) = 0 and f(255) = 255
+
+Then:
+k = (N - H(0)) / 255     # N is number of pixels in image
+C = -H(0) * 255 / (N - H(0))
+
+Final f (for image case [0...255])
+
+f(a) = round(255*(H(a) - H(0)) / (N - H(0)))
+```
+
+#### Uniform Distribution Constrain in Discrete Image?
+
+![](./images/im_4.png)
+
+* Due to Ideal world is Continuous but in the Image it is Discrete
+* The result can be improved if we map from higher range value to lower range value (say from 16 bit to 8 bit)
+
+
+#### Effect of Histogram Equalization
+* Typically, increase the contrast (use all the intensity value)
+* Areas of lower local contrast gain higher contrast (due to the uniform distribution)
+* Distribute the intensities over the histogram
+
+#### Variants of Histogram Equalization
+* Adaptive HE (AHE) - perform HE in local patches, not the whole image.
+* Contrast limited AHE (CLAHE)
+
+```python
+# TODO: Need more research here !!!
+```
