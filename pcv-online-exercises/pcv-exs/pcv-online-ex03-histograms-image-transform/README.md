@@ -191,3 +191,32 @@ f(a) = round(255*(H(a) - H(0)) / (N - H(0)))
 ```python
 # TODO: Need more research here !!!
 ```
+
+# Noise Variance Equalization
+
+* Intensity measurements on image sensor are not perfect (they contain noisy)
+* Goal: adjust the variance of the intensities to a fixed value. 
+* Useful for statistical analysis of images (all pixels have the same variance)
+
+## Distribution About the Number of Incoming Photons
+* Use Poisson distribution: 
+```text
+P(k) = (Beta * t)^k / k! * e ^(-Beta * t)
+
+With
+Beta: the average number of incoming photon to sensor chip persecond
+t: exposure time
+```
+This express the distribution about the number of photons reaching the sensor. 
+
+```text
+* Mean and variance:
+mean = Beta * t
+variance = Beta * t
+
+Standard deviation: sqrt(variance) = sqrt(Beta * t)
+```
+
+```python
+# TODO: Need more RESEARCH !!!!
+```
