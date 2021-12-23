@@ -1,0 +1,1 @@
+Download the images from https://github.com/daeyun/Image-Stitching/tree/master/img/hill
