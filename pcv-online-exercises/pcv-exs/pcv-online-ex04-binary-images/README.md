@@ -117,11 +117,103 @@ Examples:
   * 2nd: down-up, right-left
 * Always store the minimum distance
 
-`See example to understand the idea: 
+See example to understand the idea: 
+
+* For N4 neighborhood
 
 ![](./images/im_9.png)
 
+* For N8 neighborhood
+
+![](./images/im_10.png)
+
+* More examples
+
+![](./images/im_11.png)
+
+* N4 Transformation in details
+
+![](./images/im_12.png)
+
+* N8 Transformation in details 
+
+![](./images/im_13.png)
+
+* Characteristic
+
+![](./images/im_14.png)
+
+We need a way to combine them to a better one that can have a "good" approximation as Euclidean distance.  
+
+**c. Combine Distance**
+* Real cost of the diagonal is sqrt(2) of unit
+* Cost for N4 is 2 and cost for N8 is 1
+* If we approximate sqrt(2) as 3/2
+* Then sum D4 + D8 provides a better approximation for twice the Euclidean distance
+* Thus we can take the average distance: 1/2 * (D4 + D8)
 
 
+**d. Euclidian Distance Transform**
+* Use to compute the real Euclidian distance for every cell to the closest border is more difficult 
+* EDT in scipy can do that as ndimage.morphology.distance_transform_edt
+* EDT in Matlab as bwdist()
 
+#### Morphological Operators: Erosion and Dilation 
 
+**a. Filtering**
+* Binary image are often created through thresholding (point operator)
+* Operator: b(a) = 0 if a < T and 1 otherwise 
+* But in many case, use threshold is not sufficient. 
+
+**b. Morphological Operator**
+* Shrinking the foreground (object) ("erosion")
+* Expanding the foreground (object) ("dilation")
+* Removing holes in the foreground ("closing")
+* Removing stray foreground pixels in background ("opening")
+* ...
+
+Example for these effects
+
+![](./images/im_15.png)
+
+**c. Erosion**
+
+Change each foreground (here black) pixel to a background (here white) pixel if it has **a background** pixel as its N4 
+neighbor
+
+Example: 
+
+Before apply erosion
+
+![](./images/im_16.png)
+
+After apply erosion
+
+![](./images/im_17.png)
+
+**d. Dilation**
+
+Change each background (here white) pixel to a foreground (here black) pixel if it has **a foreground** pixel as N4 
+neighbor 
+
+Example: 
+
+Before apply dilation 
+
+![](./images/im_18.png)
+
+After apply dilation
+
+![](./images/im_19.png)
+
+**e. Opening and Closing**
+
+Opening:
+* Removing the stray foreground pixels in background 
+* Step 1: erosion; Step 2: dilation 
+
+Closing: 
+* Remove holes in the foreground 
+* Step 1: dilation, Step 2: erosion
+
+So: Erosion and Dilation are local operators, they take the neighborhood into account
