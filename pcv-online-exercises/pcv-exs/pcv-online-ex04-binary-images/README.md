@@ -79,7 +79,49 @@ In N8:
 * Then this result in Linear complexity O(N) (N is the number of pixels)
 ```
 
+#### Distance Transform
 
- 
+Several problems require to compute the distance from any pixel to the border of the components: 
+* Nearest neighbor problems: how far is this pixel actually away from a structure that I'm investigating.
+* In 3D, this can be applied into range sensor. 
+* Map visualization (how far away the User input point to the object, then decide which object user interested in)
+* User interfaces 
+
+**a. Formula equation**
+
+![](./images/im_6.png)
+
+With distance functions:
+
+![](./images/im_7.png)
+
+```text
+d(r, c): is distance from pixel at (r, c) coordinate of the foreground (assume foreground object when pixel value b(r, c) = 1)
+(u, v) is the point at border (mean the point just next to the foreground and it belong to background, see examples) 
+Distance is the min distance from source point to the set of boundary point
+
+If source point is at background, then the distance is 0
+
+D_4 use with N4 neighbor: This is manhattan distance
+D_8 use with N8 neighbor: This is some how
+```
+
+Examples: 
+
+![](./images/im_8.png)
+
+**b. Step to calculate**
+* Distance transform can be computed similar to the connected components.
+* Use 2 passes over the image: 
+  * 1st: top-down, left-right
+  * 2nd: down-up, right-left
+* Always store the minimum distance
+
+`See example to understand the idea: 
+
+![](./images/im_9.png)
+
+
+
 
 
