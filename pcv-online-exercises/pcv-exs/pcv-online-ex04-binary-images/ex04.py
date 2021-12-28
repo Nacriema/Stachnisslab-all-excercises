@@ -144,15 +144,64 @@ def connected_components(binary_img, neighborhood):
     return k[1:-1, 1:-1], E
 
 
-# rs = connected_components_1(gray_im, "N4")
-# rs = rs * 50
-# assert rs.shape == gray_im.shape
-rs, E = connected_components(gray_im, "N4")
-
-# Use information from Equivalent Graph to fix some label error
+# rs, E = connected_components(gray_im, "N4")
+# print(E)
+# plt.imshow(rs, cmap='gray')
+# plt.show()
 
 
-print(E)
-plt.imshow(rs, cmap='gray')
+# Distance Transformation
+def distance_transformation(binary_img, neighborhood="N4"):
+    """
+
+    Parameters
+    ----------
+    binary_img (np.ndarray): 2D binary images (0, 1)
+    neighborhood (str): N4 or N8
+
+    Returns
+    -------
+    """
+
+    # Iterate 2 pass:
+    # 1. Top - down, Left - right
+    # 2. Down - top, Right - left
+    # Just different with the neighbor, fist for 1st pass, later for 2nd pass
+
+    # Init step
+    d = np.pad(binary_img, 1, pad_with, padder=0)  # Use this to avoid numerical indexing
+    nr, nc = d.shape
+
+    # d array currently like the binary image mask
+    # Perform 1st pass
+    for r in range(1, nr - 1):
+        for c in range(1, nc - 1):
+            if d[r, c] == 1:
+                # Compare with the other value
+                # Check type
+                if neighborhood == "N4":
+                    d[r, c] = min(d[r, c-1] + 1, d[r-1, c] + 1)
+                elif neighborhood == "N8":
+                    d[r, c] = min(d[r, c-1]+1, d[r-1, c]+1, d[r-1, c-1]+1, d[r-1, c+1]+1)
+                else:
+                    raise NotImplementedError
+    # Perform 2nd pass
+    for r in range(nr - 1, 0, -1):
+        for c in range(nc - 1, 0, -1):
+            if d[r, c] != 0:
+                if neighborhood == "N4":
+                    d[r, c] = min(d[r, c], d[r, c + 1] + 1, d[r + 1, c] + 1)
+                elif neighborhood == "N8":
+                    d[r, c] = min(d[r, c], d[r, c+1]+1, d[r+1, c]+1, d[r+1, c+1]+1, d[r+1, c-1]+1)
+                else:
+                    raise NotImplementedError
+
+    return d[1:-1, 1:-1]
+
+
+N4_dis = distance_transformation(gray_im, neighborhood="N4")
+N8_dis = distance_transformation(gray_im, neighborhood="N8")
+EDT_Approx = 1./2 * (N4_dis + N8_dis)
+plt.imshow(EDT_Approx, cmap='gray')
 plt.show()
 
