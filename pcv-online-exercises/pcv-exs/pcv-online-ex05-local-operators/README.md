@@ -206,6 +206,8 @@ of Box Filter with the image:
 
 ![](./images/im_3.png)
 
+## TODO 
+- [ ] Need to fix the np.multiply() function, I've performed cross-correlation instead of Convolution, see https://stackoverflow.com/questions/44772451/what-is-the-best-way-to-perform-an-anti-transpose-in-python
 
 
 
