@@ -47,6 +47,8 @@ x can be multidimensional variable, and b is the constance term
 
 
 ## MORE RESOURCES
+* Bayes Filter: https://johnwlambert.github.io/bayes-filter/
+* Jacobian Matrix: https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant
 * Gaussian distribution: https://en.wikipedia.org/wiki/Normal_distribution
 * Marginal distribution: https://en.wikipedia.org/wiki/Marginal_distribution
 * Gaussian distribution over 2D data and the props: https://fabiandablander.com/statistics/Two-Properties.html
