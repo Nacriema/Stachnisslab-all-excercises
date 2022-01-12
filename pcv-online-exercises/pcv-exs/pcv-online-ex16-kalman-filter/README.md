@@ -62,3 +62,7 @@ x can be multidimensional variable, and b is the constance term
   * https://dsp.stackexchange.com/questions/27484/observation-matrix-in-kalman-filter
   * https://towardsdatascience.com/5-things-you-should-know-about-covariance-26b12a0516f1
   
+## TODO: 
+- [ ] Complete note about Kalman Filter.
+- [ ] Add some cases when we use Kalman Filter (see from the internet).
+- [ ] Read some papers that used Kalman Filter.
