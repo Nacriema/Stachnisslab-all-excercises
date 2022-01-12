@@ -58,5 +58,7 @@ x can be multidimensional variable, and b is the constance term
 * Convolution and the properties - one is Linear transform: https://towardsdatascience.com/intuitively-understanding-convolutions-for-deep-learning-1f6f42faee1
 * Object Falling in Air - Kalman Filter: https://courses.cs.washington.edu/courses/cse466/12au/calendar/15b-StateEstimation.pdf
 * Nice Resource of Kalman-Filter: http://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/
-* Question about Kalman-Filter:
+* My questions about Kalman-Filter:
   * https://dsp.stackexchange.com/questions/27484/observation-matrix-in-kalman-filter
+  * https://towardsdatascience.com/5-things-you-should-know-about-covariance-26b12a0516f1
+  
