@@ -1,6 +1,6 @@
 # Neural Networks
 
-## 5 Minutes
+## 5 Minutes - Neural Network
 - They are used in AI, machine learning
 - Take input signal, do some computation on that input signal and generate output (this mean they are functions)
 - How do those function look like and how can we specify them ? 
@@ -238,3 +238,20 @@ Such a simple MLP achieves a correct classification for approx 96% of the exampl
 
 ### How to Make the Network Compute What We Want ?
 * Structure and parameters are the design choices
+
+***
+# Gradient Decent
+## 5 Minutes - Gradient Descent
+* It's a technique to minimize a function
+* It's an iterative approach to minimization starting from an initial value
+* The key question is in which direction we need to change params x to minimize the function ?
+* The gradient point towards ***the steepest uphill direction***
+* What we do that we walk in the direction of the negative gradient 
+* In practice, we are not using gradient descent in basic form, we use stochastic gradient descent (due to efficiency). 
+Instead of computing exact gradient, we just compute the approximation of the gradient 
+* If you consider the loss function (the function we want to minimize) in most problems not a single monolithic function
+, it actually a sum of a lot of small functions, the question is do we need all components of that sum in order to 
+compute the gradient and the assumptions is no we don't, we can just choose random number of those. Compute the gradient 
+over this small set of loss functions and then sum them up and walk into that gradient direction.
+* There are several variants of this approach: Adam, ...
+
