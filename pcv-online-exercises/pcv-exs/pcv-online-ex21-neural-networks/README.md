@@ -252,6 +252,28 @@ Instead of computing exact gradient, we just compute the approximation of the gr
 * If you consider the loss function (the function we want to minimize) in most problems not a single monolithic function
 , it actually a sum of a lot of small functions, the question is do we need all components of that sum in order to 
 compute the gradient and the assumptions is no we don't, we can just choose random number of those. Compute the gradient 
-over this small set of loss functions and then sum them up and walk into that gradient direction.
+over this small set of loss functions and then sum them up and walk into that gradient direction. This is the idea of **SGD**.
 * There are several variants of this approach: Adam, ...
+
+## 5 Minutes - Backpropagation
+
+* Use to compute gradients of nested and complex functions
+* Often used when training neural networks
+* Backprop decomposes functions into local computations which is called a computational graph, stores local variables in
+that graph and apply chain rule in a reverse manner in order to compute the gradient of the function.
+
+```text
+Backprop = graph + local variables + chain rule
+```
+* **Computational graph** is a graph where in every node we store mathematical operation like add. We use 2 things here:
+**Forward pass** and **Backward pass**. Forward pass evaluates the function at a given location (given by the values of 
+variables), we store numbers as the local variables in that graph because we need it later on in the backward pass. **Backward pass**
+is used to compute the gradient for the position for that we have computed the forward pass. In **Backward pass** we use
+the information of the local variables we have stored before and the information of the first derivatives and can propagate 
+this information backward so that we have at the left-hand side are the gradient for that specific location.
+* Neural networks can be seen as computational graph. If we look into a single neuron and then write down as the computational 
+graph
+* We can compute the gradients of a loss function through the neural network. 
+
+## Part 2: Learning Process
 
