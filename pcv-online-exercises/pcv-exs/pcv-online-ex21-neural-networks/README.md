@@ -277,3 +277,92 @@ graph
 
 ## Part 2: Learning Process
 
+Back propagation is the basic technique that we can apply in order to estimate the parameters of the neural network
+
+Parameters of the network let it determine the task that we want it to do. Beside that, the whole structure of a network 
+has the impact on what the network actually does. 
+
+### Network Parameters
+
+Given a network structure, weights and biases tell the network on what to do
+```text
+params = weights + biases
+```
+
+### What Means "Learning" ?
+
+We want to estimate the Network Parameters based on training data, we tell the network through training examples what it 
+should do, we specify the task through a training dataset
+
+### Loss Function
+* Loss function compares what I'm expecting to get with the result that the network given. 
+
+### Loss Over All Examples
+* We need to evaluate the performance of the network over all examples.
+* **Goal:** Find the parameter vector for the labeled training set given the loss L
+
+### Start
+* Initialize parameters randomly
+* See how well it performs (bad !)
+* How to improve the parameters so that the loss decreases 
+
+### Loss Minimization using Gradient Descent 
+* Our problem looks like a non-linear least squares problem
+* We have **a lot** of parameters, which make Newton-Gauss computationally tricky.
+* Gradient descent is a better way to perform the minimization 
+
+### Gradient Descent in 1D
+
+* The starting location matters the result of Gradient Descent.
+* GD just locally makes decisions and locally moves towards the local minimum.
+
+### Gradient Descent in 2D 
+* We can do the same in 2D
+* Gradients are now the direction vectors 
+
+### Meaning of the Gradient Vector 
+* It tells us which dimension of the parameter vector will have a larger impact than others on this minimization 
+
+### Gradient Descent in Higher Dimension Spaces
+* This is the same idea, but now the gradient vector has more dimensions
+
+### Keep in Mind...
+* Loss for one training example
+* Total loss is the average loss of all training examples
+* We need to adjust the parameters to minimize the total loss !
+
+### Gradient Over All Examples
+
+### Two Challenges
+1. How to optimize the process if we have **a lot of training examples ?**
+2. How to compute the gradients for **complex and nested functions ?**
+
+
+## 1. Handling Large Training Set
+
+### 1st trick: Compute a gradient only on a small, sampled subset of examples
+
+Mini-batch is a subset of the training set, then the trick is in every step of **Gradient Descent**, I'm only using this 
+mini-batch in order to minimize my error. This is an approximation because we are ignoring large part of the dataset
+in order to find the gradient direction
+
+* We **sample a mini-batch** in each step of gradient descent
+* Then we use only mini-batch B to compute the Gradient signal
+* We use this to **approximate** the real gradient
+* This can approximate down-hill steps but much faster to compute
+* This technique is so called: **Stochastic Gradient Descent**.
+
+## 2. Computing the Gradient
+
+### 2nd trick: Compute Gradient step by step
+* Use Algorithm: Backpropagation, which is does by computing the gradient one step after the other by basically walking 
+through the nested function, do step by step with a lot of simple functions in order to combine them into that nested 
+function. 
+* Neuron activations are chains of activation functions and matrix-vector multiplication
+* The idea is to break down the gradient computation into smaller steps
+* Key ingredients of backpropagation is **chain rule**.
+
+# Backpropagation 
+
+
+
