@@ -107,7 +107,7 @@ value (from 0 to 255).
 
 #### Transformation of a PDF 
 
-![](./images/im_1.png)
+![](images/im_1.png)
 
 We have h_a, f, then how we find the h_b 
 In the image above, all image from range da (say from 150 to 155) must be the same in the range db (say range from 
@@ -121,7 +121,7 @@ f(150) to f(155) - that is the reason why the Curve f is monotone - not the sine
 * Have b = f(a) => a = f^-1(b)
 * Then h_b(b) = h_a(f^-1(b)) / |f'(f^-1(b))| **(1)**
 
-![](./images/im_2.png)
+![](images/im_2.png)
 
 Function **(1)** means, if we know h_a and f, then we can compute h_b at any b (in our case b in range [0...255])
 
@@ -135,7 +135,7 @@ Function **(1)** means, if we know h_a and f, then we can compute h_b at any b (
 for dealing with this case)
 * Given h_a and desired h_b(b) = const at all b [0, 255], compute the map function f
 
-![](./images/im_3.png)
+![](images/im_3.png)
 
 ```text
 Assume f is monotone, increase
@@ -173,7 +173,7 @@ f(a) = round(255*(H(a) - H(0)) / (N - H(0)))
 
 #### Uniform Distribution Constrain in Discrete Image?
 
-![](./images/im_4.png)
+![](images/im_4.png)
 
 * Due to Ideal world is Continuous but in the Image it is Discrete
 * The result can be improved if we map from higher range value to lower range value (say from 16 bit to 8 bit)

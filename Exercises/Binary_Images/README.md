@@ -30,7 +30,7 @@ This is also called "city-block" or Manhattan neighborhood.
 Indexes: N_4(i, j) = {(i, j-1), (i-1, j-1), (i-1, j), (i-1, j+1),
                       (i, j+1), (i+1, j+1), (i+1, j), (i+1, j-1)}
 
-![](./images/im_1.png)
+![](images/im_1.png)
 
 **b. Determining Connected Components via a Graph**
 * Build graph with edges according to N8 neighbors
@@ -44,7 +44,7 @@ Indexes: N_4(i, j) = {(i, j-1), (i-1, j-1), (i-1, j), (i-1, j+1),
 
 This is called "brushfire" or "floodfill" approach
 
-![](./images/im_2.png)
+![](images/im_2.png)
 
 **Properties of the above Algorithm**:
 * This work in general graphs
@@ -58,11 +58,11 @@ Idea:
 systematic of the graph to decide which label belong to which pixel)
 * In case of multiple labels for the same component, we also need an equivalent table for post-processing 
 
-![](./images/im_3.png)
+![](images/im_3.png)
 
 The full algorithm is written bellow: 
 
-![](./images/im_5.png)
+![](images/im_5.png)
 
 Characteristic: 
 ```text
@@ -89,11 +89,11 @@ Several problems require to compute the distance from any pixel to the border of
 
 **a. Formula equation**
 
-![](./images/im_6.png)
+![](images/im_6.png)
 
 With distance functions:
 
-![](./images/im_7.png)
+![](images/im_7.png)
 
 ```text
 d(r, c): is distance from pixel at (r, c) coordinate of the foreground (assume foreground object when pixel value b(r, c) = 1)
@@ -108,7 +108,7 @@ D_8 use with N8 neighbor: This is some how
 
 Examples: 
 
-![](./images/im_8.png)
+![](images/im_8.png)
 
 **b. Step to calculate**
 * Distance transform can be computed similar to the connected components.
@@ -121,27 +121,27 @@ See example to understand the idea:
 
 * For N4 neighborhood
 
-![](./images/im_9.png)
+![](images/im_9.png)
 
 * For N8 neighborhood
 
-![](./images/im_10.png)
+![](images/im_10.png)
 
 * More examples
 
-![](./images/im_11.png)
+![](images/im_11.png)
 
 * N4 Transformation in details
 
-![](./images/im_12.png)
+![](images/im_12.png)
 
 * N8 Transformation in details 
 
-![](./images/im_13.png)
+![](images/im_13.png)
 
 * Characteristic
 
-![](./images/im_14.png)
+![](images/im_14.png)
 
 We need a way to combine them to a better one that can have a "good" approximation as Euclidean distance.  
 
@@ -174,7 +174,7 @@ We need a way to combine them to a better one that can have a "good" approximati
 
 Example for these effects
 
-![](./images/im_15.png)
+![](images/im_15.png)
 
 **c. Erosion**
 
@@ -185,11 +185,11 @@ Example:
 
 Before apply erosion
 
-![](./images/im_16.png)
+![](images/im_16.png)
 
 After apply erosion
 
-![](./images/im_17.png)
+![](images/im_17.png)
 
 **d. Dilation**
 
@@ -200,11 +200,11 @@ Example:
 
 Before apply dilation 
 
-![](./images/im_18.png)
+![](images/im_18.png)
 
 After apply dilation
 
-![](./images/im_19.png)
+![](images/im_19.png)
 
 **e. Opening and Closing**
 
